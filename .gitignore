@@ -1,0 +1,42 @@
+#########################
+##### Always ignore #####
+#########################
+# env
+.env
+
+# Logs
+*.log
+
+# ZIP
+*.zip
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+.pytest_cache/
+.DS_Store
+
+# Distribution / packaging / venv
+bin/
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+.python-version
+
+#########################
+#########################
+
+# Other
+.todo
+
+# Romain virtual env
+venv310/
