@@ -8,21 +8,12 @@ Machine learning and differentiable programming project
 
 ## Env Romain
 
-- Python 3.10.12 with virtualenv
-- `pip install -r requirements.txt`
-- `pip install typing_extensions==4.7.1` (retrograde compatibility)
-
 ### Conda
-
-```bash
-conda create --name ml_project # create env
-conda activate ml_project
-conda install pandas numpy pytorch torchvision pillow tqdm matplotlib
-```
 
 ```bash
 conda create --name venv38 python=3.8
 conda activate venv38
 conda install pandas numpy pytorch torchvision pillow tqdm matplotlib
+# For using ipykernel in VSCode
 conda install -n venv38 ipykernel --update-deps --force-reinstall
 ```
