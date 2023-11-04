@@ -35,8 +35,9 @@ var/
 #########################
 #########################
 
-# Other
-.todo
+# Dev Romain
+romain_dir
 
-# Romain virtual env
-venv310/
+# IA
+*.pkl
+BestModel

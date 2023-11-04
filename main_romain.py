@@ -38,6 +38,10 @@ print("Number of unique images: ", len(df[0].unique()))
 df.rename(columns={0:'image', 1:'caption'}, inplace=True)
 print(df.head())
 
+# Remove #digit from image name
+df['image'] = df['image'].apply(lambda x : x.split('#')[0])
+print(df.head())
+
 #%% Preprocessing -> Remove Single Character and non alpha Words. 
 # Add , and tokens. token is appended such that length in max_seq_len 
 # (maximum length across all captions which is 33 in our case)
@@ -81,3 +85,5 @@ index_to_word = {index: word for index, word in enumerate(word_dict)}
 word_to_index = {word: index for index, word in enumerate(word_dict)}
 print(len(index_to_word), len(word_to_index))
 print("------------------")
+
+# %%
