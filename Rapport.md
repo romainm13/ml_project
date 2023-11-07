@@ -6,7 +6,7 @@
 ## Méthode
 
 ### L'architecture du Resnet 18
-![Resnet 18](https://www.researchgate.net/publication/354432343/figure/fig3/AS:1065583881764866@1631066403573/Architecture-of-the-ResNet-18-model-used-in-this-study.png)
+![Resnet 18](https://penseeartificielle.fr/wp-content/uploads/2019/01/Proposed-Modified-ResNet-18-architecture-for-Bangla-HCR-In-the-diagram-conv-stands-for.jpg)
 ### Fonction de coût
 ### Métrique d'évaluation
 
