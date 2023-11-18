@@ -177,3 +177,294 @@ for image_name, t_img in tqdm(train_ImageDataloader_ResNet):
     embdg = get_vector(t_img)
     
     extract_imgFtr_ResNet_train[image_name[0]] = embdg
+    
+# %% 
+a_file = open("./EncodedImageTrainResNet.pkl", "wb")
+pickle.dump(extract_imgFtr_ResNet_train, a_file)
+a_file.close()
+
+# %%
+extract_imgFtr_ResNet_valid = {}
+for image_name, t_img in tqdm(valid_ImageDataloader_ResNet):
+    t_img = t_img.to(device)
+    embdg = get_vector(t_img)
+ 
+    extract_imgFtr_ResNet_valid[image_name[0]] = embdg
+
+# %%
+a_file = open("./EncodedImageValidResNet.pkl", "wb")
+pickle.dump(extract_imgFtr_ResNet_valid, a_file)
+a_file.close()
+
+# %%
+# ## Create DataLoader which will be used to load data into Transformer Model.
+# ## FlickerDataSetResnet will return caption sequence, 1 timestep left shifted caption sequence which model will predict and Stored Image features from ResNet.
+
+class FlickerDataSetResnet():
+    def __init__(self, data, pkl_file):
+        self.data = data
+        self.encodedImgs = pd.read_pickle(pkl_file)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+    
+        caption_seq = self.data.iloc[idx]['text_seq']
+        target_seq = caption_seq[1:]+[0]
+
+        image_name = self.data.iloc[idx]['image']
+        image_tensor = self.encodedImgs[image_name]
+        image_tensor = image_tensor.permute(0,2,3,1)
+        image_tensor_view = image_tensor.view(image_tensor.size(0), -1, image_tensor.size(3))
+
+        return torch.tensor(caption_seq), torch.tensor(target_seq), image_tensor_view
+
+train_dataset_resnet = FlickerDataSetResnet(train, 'EncodedImageTrainResNet.pkl')
+train_dataloader_resnet = DataLoader(train_dataset_resnet, batch_size = 32, shuffle=True)
+
+valid_dataset_resnet = FlickerDataSetResnet(valid, 'EncodedImageValidResNet.pkl')
+valid_dataloader_resnet = DataLoader(valid_dataset_resnet, batch_size = 32, shuffle=True)
+
+# %% 
+# ## Create Transformer Decoder Model. This Model will take caption sequence and the extracted resnet image features as input and ouput 1 timestep shifted (left) caption sequence. 
+# ## In the Transformer decoder, lookAhead and padding mask has also been applied
+
+# %%
+# ### Position Embedding
+
+class PositionalEncoding(nn.Module):
+
+    def __init__(self, d_model, dropout=0.1, max_len=max_seq_len):
+        super(PositionalEncoding, self).__init__()
+        self.dropout = nn.Dropout(p=dropout)
+
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0)
+        self.register_buffer('pe', pe)
+        
+
+    def forward(self, x):
+        if self.pe.size(0) < x.size(0):
+            self.pe = self.pe.repeat(x.size(0), 1, 1).to(device)
+        self.pe = self.pe[:x.size(0), : , : ]
+        
+        x = x + self.pe
+        return self.dropout(x)
+
+# %%
+# ## Transformer Decoder
+
+class ImageCaptionModel(nn.Module):
+    def __init__(self, n_head, n_decoder_layer, vocab_size, embedding_size):
+        super(ImageCaptionModel, self).__init__()
+        self.pos_encoder = PositionalEncoding(embedding_size, 0.1)
+        self.TransformerDecoderLayer = nn.TransformerDecoderLayer(d_model =  embedding_size, nhead = n_head)
+        self.TransformerDecoder = nn.TransformerDecoder(decoder_layer = self.TransformerDecoderLayer, num_layers = n_decoder_layer)
+        self.embedding_size = embedding_size
+        self.embedding = nn.Embedding(vocab_size , embedding_size)
+        self.last_linear_layer = nn.Linear(embedding_size, vocab_size)
+        self.init_weights()
+
+    def init_weights(self):
+        initrange = 0.1
+        self.embedding.weight.data.uniform_(-initrange, initrange)
+        self.last_linear_layer.bias.data.zero_()
+        self.last_linear_layer.weight.data.uniform_(-initrange, initrange)
+
+    def generate_Mask(self, size, decoder_inp):
+        decoder_input_mask = (torch.triu(torch.ones(size, size)) == 1).transpose(0, 1)
+        decoder_input_mask = decoder_input_mask.float().masked_fill(decoder_input_mask == 0, float('-inf')).masked_fill(decoder_input_mask == 1, float(0.0))
+
+        decoder_input_pad_mask = decoder_inp.float().masked_fill(decoder_inp == 0, float(0.0)).masked_fill(decoder_inp > 0, float(1.0))
+        decoder_input_pad_mask_bool = decoder_inp == 0
+
+        return decoder_input_mask, decoder_input_pad_mask, decoder_input_pad_mask_bool
+
+    def forward(self, encoded_image, decoder_inp):
+        encoded_image = encoded_image.permute(1,0,2)
+        
+
+        decoder_inp_embed = self.embedding(decoder_inp)* math.sqrt(self.embedding_size)
+        
+        decoder_inp_embed = self.pos_encoder(decoder_inp_embed)
+        decoder_inp_embed = decoder_inp_embed.permute(1,0,2)
+        
+
+        decoder_input_mask, decoder_input_pad_mask, decoder_input_pad_mask_bool = self.generate_Mask(decoder_inp.size(1), decoder_inp)
+        decoder_input_mask = decoder_input_mask.to(device)
+        decoder_input_pad_mask = decoder_input_pad_mask.to(device)
+        decoder_input_pad_mask_bool = decoder_input_pad_mask_bool.to(device)
+        
+
+        decoder_output = self.TransformerDecoder(tgt = decoder_inp_embed, memory = encoded_image, tgt_mask = decoder_input_mask, tgt_key_padding_mask = decoder_input_pad_mask_bool)
+        
+        final_output = self.last_linear_layer(decoder_output)
+
+        return final_output,  decoder_input_pad_mask
+
+# %%
+# ##  Train the Model
+# ### The cross entropy loss has been masked at time steps where input token is <'pad'>.
+
+EPOCH = 30
+
+ictModel = ImageCaptionModel(16, 4, vocab_size, 512).to(device)
+optimizer = torch.optim.Adam(ictModel.parameters(), lr = 0.00001)
+# optimizer = torch.optim.Adam(ictModel.parameters(), lr = 0.001) NOT WORKING AT ALL BUG
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.8, patience=2, verbose = True)
+criterion = torch.nn.CrossEntropyLoss(reduction='none')
+min_val_loss = float('Inf')
+
+for epoch in tqdm(range(EPOCH)):
+    total_epoch_train_loss = 0
+    total_epoch_valid_loss = 0
+    total_train_words = 0
+    total_valid_words = 0
+    ictModel.train()
+
+    ### Train Loop
+    for caption_seq, target_seq, image_embed in train_dataloader_resnet:
+
+        optimizer.zero_grad()
+
+        image_embed = image_embed.squeeze(1).to(device)
+        caption_seq = caption_seq.to(device)
+        target_seq = target_seq.to(device)
+
+        output, padding_mask = ictModel.forward(image_embed, caption_seq)
+        output = output.permute(1, 2, 0)
+
+        loss = criterion(output,target_seq)
+
+        loss_masked = torch.mul(loss, padding_mask)
+
+        final_batch_loss = torch.sum(loss_masked)/torch.sum(padding_mask)
+
+        final_batch_loss.backward()
+        optimizer.step()
+        total_epoch_train_loss += torch.sum(loss_masked).detach().item()
+        total_train_words += torch.sum(padding_mask)
+
+ 
+    total_epoch_train_loss = total_epoch_train_loss/total_train_words
+  
+
+    ### Eval Loop
+    ictModel.eval()
+    with torch.no_grad():
+        for caption_seq, target_seq, image_embed in valid_dataloader_resnet:
+
+            image_embed = image_embed.squeeze(1).to(device)
+            caption_seq = caption_seq.to(device)
+            target_seq = target_seq.to(device)
+
+            output, padding_mask = ictModel.forward(image_embed, caption_seq)
+            output = output.permute(1, 2, 0)
+
+            loss = criterion(output,target_seq)
+
+            loss_masked = torch.mul(loss, padding_mask)
+
+            total_epoch_valid_loss += torch.sum(loss_masked).detach().item()
+            total_valid_words += torch.sum(padding_mask)
+
+    total_epoch_valid_loss = total_epoch_valid_loss/total_valid_words
+  
+    print("Epoch -> ", epoch," Training Loss -> ", total_epoch_train_loss.item(), "Eval Loss -> ", total_epoch_valid_loss.item() )
+  
+    if min_val_loss > total_epoch_valid_loss:
+        print("Writing Model at epoch ", epoch)
+        torch.save(ictModel, './BestModel')
+        min_val_loss = total_epoch_valid_loss
+  
+
+    scheduler.step(total_epoch_valid_loss.item())
+
+
+# %% ## Lets Generate Captions !!!
+
+model = torch.load('./BestModel')
+start_token = word_to_index['<start>']
+end_token = word_to_index['<end>']
+pad_token = word_to_index['<pad>']
+max_seq_len = 33
+print(start_token, end_token, pad_token)
+
+valid_img_embed = pd.read_pickle('EncodedImageValidResNet.pkl')
+
+# %% ### Here in the below function,we are generating caption in beam search. K defines the topK token to look at each time step
+
+def generate_caption(K, img_nm): 
+    img_loc = '/home/romainm/ml_project/Flicker8k_Dataset/'+str(img_nm)
+    image = Image.open(img_loc).convert("RGB")
+    plt.imshow(image)
+
+    model.eval() 
+    valid_img_df = valid[valid['image']==img_nm]
+    print("Actual Caption : ")
+    print(valid_img_df['caption'].tolist())
+    img_embed = valid_img_embed[img_nm].to(device)
+
+
+    img_embed = img_embed.permute(0,2,3,1)
+    img_embed = img_embed.view(img_embed.size(0), -1, img_embed.size(3))
+
+
+    input_seq = [pad_token]*max_seq_len
+    input_seq[0] = start_token
+
+    input_seq = torch.tensor(input_seq).unsqueeze(0).to(device)
+    predicted_sentence = []
+    with torch.no_grad():
+        for eval_iter in range(0, max_seq_len):
+
+            output, padding_mask = model.forward(img_embed, input_seq)
+
+            output = output[eval_iter, 0, :]
+
+            values = torch.topk(output, K).values.tolist()
+            indices = torch.topk(output, K).indices.tolist()
+
+            next_word_index = random.choices(indices, values, k = 1)[0]
+
+            next_word = index_to_word[next_word_index]
+
+            input_seq[:, eval_iter+1] = next_word_index
+
+
+            if next_word == '<end>' :
+                break
+
+            predicted_sentence.append(next_word)
+    print("\n")
+    print("Predicted caption : ")
+    print(" ".join(predicted_sentence+['.']))
+
+#%% ### 1st Example 
+generate_caption(1, unq_valid_imgs.iloc[50]['image'])
+
+# %% [code]
+generate_caption(2, unq_valid_imgs.iloc[50]['image'])
+
+# %% ### 2nd Example
+generate_caption(1, unq_valid_imgs.iloc[100]['image'])
+
+# %% [code]
+generate_caption(2, unq_valid_imgs.iloc[100]['image'])
+
+# %% [### 3rd Example
+generate_caption(1, unq_valid_imgs.iloc[500]['image'])
+
+# %% [code]
+generate_caption(2, unq_valid_imgs.iloc[500]['image'])
+
+# %% ### 4rth Example
+generate_caption(1, unq_valid_imgs.iloc[600]['image'])
+
+# %% [code]
+generate_caption(2, unq_valid_imgs.iloc[600]['image'])
