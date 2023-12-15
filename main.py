@@ -18,6 +18,9 @@ import math
 import torch.nn.functional as F
 import pickle
 import random
+from IPython.display import display
+import nltk
+from nltk.translate.bleu_score import corpus_bleu
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
@@ -311,6 +314,10 @@ class ImageCaptionModel(nn.Module):
 # ##  Train the Model
 # ### The cross entropy loss has been masked at time steps where input token is <'pad'>.
 
+train_losses = []
+val_losses = []
+scorebleu = []
+
 EPOCH = 30
 
 ictModel = ImageCaptionModel(16, 4, vocab_size, 512).to(device)
@@ -325,6 +332,8 @@ for epoch in tqdm(range(EPOCH)):
     total_epoch_valid_loss = 0
     total_train_words = 0
     total_valid_words = 0
+    # accuracy_train = 0
+    # accuracy_valid = 0
     ictModel.train()
 
     ### Train Loop
@@ -352,7 +361,6 @@ for epoch in tqdm(range(EPOCH)):
 
  
     total_epoch_train_loss = total_epoch_train_loss/total_train_words
-  
 
     ### Eval Loop
     ictModel.eval()
@@ -381,9 +389,22 @@ for epoch in tqdm(range(EPOCH)):
         print("Writing Model at epoch ", epoch)
         torch.save(ictModel, './BestModel')
         min_val_loss = total_epoch_valid_loss
-  
 
     scheduler.step(total_epoch_valid_loss.item())
+
+    train_losses.append(total_epoch_train_loss.item())
+    val_losses.append(total_epoch_valid_loss.item())
+
+plt.figure(figsize=(10, 5))
+plt.plot(train_losses, label='Training Loss')
+plt.plot(val_losses, label='Validation Loss')
+# plt.plot(scorebleu, label = 'Blue score')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+#plt.ylabel('Metrique d evaluation')
+plt.title('Training and validation Loss Over Epochs')
+plt.legend()
+plt.show()
 
 
 # %% ## Lets Generate Captions !!!
@@ -468,3 +489,5 @@ generate_caption(1, unq_valid_imgs.iloc[600]['image'])
 
 # %% [code]
 generate_caption(2, unq_valid_imgs.iloc[600]['image'])
+
+# %%
