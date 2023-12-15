@@ -332,6 +332,8 @@ for epoch in tqdm(range(EPOCH)):
     total_epoch_valid_loss = 0
     total_train_words = 0
     total_valid_words = 0
+    # accuracy_train = 0
+    # accuracy_valid = 0
     ictModel.train()
 
     ### Train Loop
@@ -387,69 +389,22 @@ for epoch in tqdm(range(EPOCH)):
         print("Writing Model at epoch ", epoch)
         torch.save(ictModel, './BestModel')
         min_val_loss = total_epoch_valid_loss
-  
 
     scheduler.step(total_epoch_valid_loss.item())
 
     train_losses.append(total_epoch_train_loss.item())
     val_losses.append(total_epoch_valid_loss.item())
 
-    # Convertir les indices prédits en séquences de mots
-    predicted_sequences = []
-    reference_sequences = []
-    loop = 0
-    with torch.no_grad():
-        for caption_seq, target_seq, image_embed in valid_dataloader_resnet:
-            print("------------ Loop:", loop, "------------")
-            print("len caption_seq:", len(caption_seq))
-            print("len target_seq:", len(target_seq))
-            print("len image_embed:", len(image_embed))
-            # FILL predicted_sequences
-            image_embed = image_embed.squeeze(1).to(device)
-            print("len image_embed here:", len(image_embed))
-            caption_seq = caption_seq.to(device)
-            print("len caption_seq:", len(caption_seq))
-            # ici l'output est censé être la sortie du décodeur avant passage par la couche d'embedding
-            output, _ = ictModel.forward(image_embed, caption_seq)
-            print("len output:", len(output))
-            output = torch.argmax(output, dim=2).cpu().numpy().tolist()
-            print("len output2:", len(output))
-            print("output:", output)
-            predicted_sequences.extend(output)
-            print("Len(predicted_sequences):", len(predicted_sequences))
-            # FILL reference_sequences
-            target_seq = target_seq.cpu().numpy().tolist()
-            print("target_seq:", target_seq)
-            reference_sequences.extend(target_seq)
-            print("Len(reference_sequences):", len(reference_sequences))
-            print("------------ End Loop:", loop, "------------")
-            loop += 1
-            
-            # try:
-            #     res_corpus_bleu = corpus_bleu([
-
-    # Calculer la métrique BLEU
-    print("Calculating BLEU Score")
-    print("type(reference_sequences):", type(reference_sequences))
-    print("Len(reference_sequences):", len(reference_sequences))
-    print("type(predicted_sequences):", type(predicted_sequences))
-    print("Len(predicted_sequences):", len(predicted_sequences))
-    
-#     bleu_score = max(corpus_bleu([[ref], [pred]], weights=(1, 0, 0, 0)) for ref, pred in zip(reference_sequences, predicted_sequences))
-
-#     # Afficher le score BLEU
-#     scorebleu.append(bleu_score)
-
-# plt.figure(figsize=(10, 5))
-# plt.plot(train_losses, label='Training Loss')
-# plt.plot(val_losses, label='Validation Loss')
+plt.figure(figsize=(10, 5))
+plt.plot(train_losses, label='Training Loss')
+plt.plot(val_losses, label='Validation Loss')
 # plt.plot(scorebleu, label = 'Blue score')
-# plt.xlabel('Epochs')
-# plt.ylabel('Loss')
-# plt.ylabel('Metrique d evaluation')
-# plt.title('Evaluation metric and training and validation Loss Over Epochs')
-# plt.legend()
-# plt.show()
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+#plt.ylabel('Metrique d evaluation')
+plt.title('Training and validation Loss Over Epochs')
+plt.legend()
+plt.show()
 
 
 # %% ## Lets Generate Captions !!!
@@ -534,3 +489,5 @@ generate_caption(1, unq_valid_imgs.iloc[600]['image'])
 
 # %% [code]
 generate_caption(2, unq_valid_imgs.iloc[600]['image'])
+
+# %%
