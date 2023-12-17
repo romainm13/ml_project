@@ -20,7 +20,7 @@ import pickle
 import random
 from IPython.display import display
 import nltk
-from nltk.translate.bleu_score import corpus_bleu
+from nltk.translate.bleu_score import sentence_bleu
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
@@ -212,7 +212,8 @@ class FlickerDataSetResnet():
         return len(self.data)
 
     def __getitem__(self, idx):
-    
+        
+        real_capt = self.data.iloc[idx]['caption']
         caption_seq = self.data.iloc[idx]['text_seq']
         target_seq = caption_seq[1:]+[0]
 
@@ -221,7 +222,7 @@ class FlickerDataSetResnet():
         image_tensor = image_tensor.permute(0,2,3,1)
         image_tensor_view = image_tensor.view(image_tensor.size(0), -1, image_tensor.size(3))
 
-        return torch.tensor(caption_seq), torch.tensor(target_seq), image_tensor_view
+        return torch.tensor(caption_seq), torch.tensor(target_seq), image_tensor_view, real_capt
 
 train_dataset_resnet = FlickerDataSetResnet(train, 'EncodedImageTrainResNet.pkl')
 train_dataloader_resnet = DataLoader(train_dataset_resnet, batch_size = 32, shuffle=True)
@@ -337,12 +338,13 @@ for epoch in tqdm(range(EPOCH)):
     total_epoch_valid_loss = 0
     total_train_words = 0
     total_valid_words = 0
-    # accuracy_train = 0
-    # accuracy_valid = 0
+    total_accuracy_train = 0
+    total_accuracy_valid = 0
+
     ictModel.train()
 
     ### Train Loop
-    for caption_seq, target_seq, image_embed in train_dataloader_resnet:
+    for caption_seq, target_seq, image_embed, real_capt in train_dataloader_resnet:
 
         optimizer.zero_grad()
 
@@ -364,34 +366,14 @@ for epoch in tqdm(range(EPOCH)):
         total_epoch_train_loss += torch.sum(loss_masked).detach().item()
         total_train_words += torch.sum(padding_mask)
 
- 
-    total_epoch_train_loss = total_epoch_train_loss/total_train_words
-
-    ### Eval Loop
-    ictModel.eval()
-    with torch.no_grad():
-        for caption_seq, target_seq, image_embed in valid_dataloader_resnet:
-
-            image_embed = image_embed.squeeze(1).to(device)
-            caption_seq = caption_seq.to(device)
-            target_seq = target_seq.to(device)
-
-            output, padding_mask = ictModel.forward(image_embed, caption_seq)
-            output = output.permute(1, 2, 0)
-
-            loss = criterion(output,target_seq)
-
-            loss_masked = torch.mul(loss, padding_mask)
-
-            total_epoch_valid_loss += torch.sum(loss_masked).detach().item()
-            total_valid_words += torch.sum(padding_mask)
-
+        for img_emb,ref_cap in zip(image_embed, real_capt):
             predicted_sentence = []
 
             input_seq = [pad_token]*max_seq_len
             input_seq[0] = start_token
 
             input_seq = torch.tensor(input_seq).unsqueeze(0).to(device)
+            
             with torch.no_grad():
                 for eval_iter in range(0, max_seq_len):
 
@@ -413,6 +395,65 @@ for epoch in tqdm(range(EPOCH)):
                         break
 
                 predicted_sentence.append(next_word)
+            
+            total_accuracy_train += sentence_bleu(ref_cap,predicted_sentence)
+
+        total_accuracy_train = total_accuracy_train/len(real_capt)
+
+ 
+    total_epoch_train_loss = total_epoch_train_loss/total_train_words
+
+    ### Eval Loop
+    ictModel.eval()
+    with torch.no_grad():
+        for caption_seq, target_seq, image_embed, real_capt in valid_dataloader_resnet:
+
+            image_embed = image_embed.squeeze(1).to(device)
+            caption_seq = caption_seq.to(device)
+            target_seq = target_seq.to(device)
+
+            output, padding_mask = ictModel.forward(image_embed, caption_seq)
+            output = output.permute(1, 2, 0)
+
+            loss = criterion(output,target_seq)
+
+            loss_masked = torch.mul(loss, padding_mask)
+
+            total_epoch_valid_loss += torch.sum(loss_masked).detach().item()
+            total_valid_words += torch.sum(padding_mask)
+
+            for img_emb,ref_cap in zip(image_embed, real_capt):
+                predicted_sentence = []
+
+                input_seq = [pad_token]*max_seq_len
+                input_seq[0] = start_token
+
+                input_seq = torch.tensor(input_seq).unsqueeze(0).to(device)
+            
+                for eval_iter in range(0, max_seq_len):
+
+                    output, padding_mask = ictModel.forward(image_embed, input_seq)
+
+                    output = output[eval_iter, 0, :]
+
+                    values = torch.topk(output, 1).values.tolist()
+                    indices = torch.topk(output, 1).indices.tolist()
+
+                    next_word_index = random.choices(indices, values, k = 1)[0]
+
+                    next_word = index_to_word[next_word_index]
+
+                    input_seq[:, eval_iter+1] = next_word_index
+
+
+                    if next_word == '<end>' :
+                        break
+
+                predicted_sentence.append(next_word)
+            
+            total_accuracy_valid += sentence_bleu(ref_cap,predicted_sentence)
+        
+        total_accuracy_valid = total_accuracy_valid/len(real_capt)
 
     total_epoch_valid_loss = total_epoch_valid_loss/total_valid_words
   

@@ -50,8 +50,12 @@ Enfin, le modèle est entraîné sur une plage d'epochs variant entre 30 et 50 e
 
 ### Analyse des résultats
 
-### Visualisation des résultats
+Notre première analyse concerne la loss et ses variations selon le nombre d'epochs. Nous avons tout d'abord remarqué que la training loss stagnait à partir de 30 epochs et que la validation loss dépasse la training loss à partir de la 5e epoch. En souhaitant mieux comprendre cette évolution, nous avons réalisé un test avec 50 epochs et avons vu que la validation loss n'évoluait pas tandis que la train loss convergeait. Notre modèle n'overfit donc pas puisque la validation loss ne diverge pas.
+
+Afin d'évaluer l'impact du nombre de paramètres sur l'overfitting, nous avons modifié le nombre de batch et avons observé que la convergence ne se faisait pas de la même façon : lorsque le nombre de batch est plus faible, la training loss converge vers une valeur plus basse tandis que la validation loss remonte après une vingtaine d'epochs. Cela prouve bien qu'augmenter le nombre de paramètres provoque le phénomène d'overfitting et on pourrait s'attendre à voir une double descente si on prolonge le nombre d'epochs.
+
+Nous avons ensuite cherché à savoir si cette convergence de la loss était parallèle à celle du score bleu et donc de l'accuracy de notre modèle. En traçant la coube d'accuracy sur 30 epochs, nous avons obtenu ceci :
 
 ## Conclusion
 
-## Bibliographie
+
