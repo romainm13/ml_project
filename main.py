@@ -110,8 +110,8 @@ display(df.head(2))
 
 # %% ## Split In Train and validation data. Same Image should not be present in both training and validation data 
 df = df.sort_values(by = 'image')
-train = df.iloc[:int(0.9*len(df))]
-valid = df.iloc[int(0.9*len(df)):]
+train = df.iloc[:int(0.8*len(df))]
+valid = df.iloc[int(0.8*len(df)):]
 
 print(len(train), train['image'].nunique())
 print(len(valid), valid['image'].nunique())
@@ -318,6 +318,11 @@ train_losses = []
 val_losses = []
 scorebleu = []
 
+start_token = word_to_index['<start>']
+end_token = word_to_index['<end>']
+pad_token = word_to_index['<pad>']
+max_seq_len = 33
+
 EPOCH = 30
 
 ictModel = ImageCaptionModel(16, 4, vocab_size, 512).to(device)
@@ -380,6 +385,34 @@ for epoch in tqdm(range(EPOCH)):
 
             total_epoch_valid_loss += torch.sum(loss_masked).detach().item()
             total_valid_words += torch.sum(padding_mask)
+
+            predicted_sentence = []
+
+            input_seq = [pad_token]*max_seq_len
+            input_seq[0] = start_token
+
+            input_seq = torch.tensor(input_seq).unsqueeze(0).to(device)
+            with torch.no_grad():
+                for eval_iter in range(0, max_seq_len):
+
+                    output, padding_mask = ictModel.forward(image_embed, input_seq)
+
+                    output = output[eval_iter, 0, :]
+
+                    values = torch.topk(output, 1).values.tolist()
+                    indices = torch.topk(output, 1).indices.tolist()
+
+                    next_word_index = random.choices(indices, values, k = 1)[0]
+
+                    next_word = index_to_word[next_word_index]
+
+                    input_seq[:, eval_iter+1] = next_word_index
+
+
+                    if next_word == '<end>' :
+                        break
+
+                predicted_sentence.append(next_word)
 
     total_epoch_valid_loss = total_epoch_valid_loss/total_valid_words
   

@@ -33,9 +33,20 @@ Pour ce projet, nous nous sommes basés sur le concours kaggle suivant : [Kaggle
 
 Le Dataset Flickr8k a été manuellement sélectionné pour que n’apparaissent pas de personnes ou de lieux connus. Il y a en tout 8096 images et 40460 descriptions en anglais, pour au total un vocabulaire de 8360 mots.
 
-## Implémentation Analyses des résultats
+## Implémentation  et analyse des résultats
 
 ### Implémentation
+
+La première étape du code consiste à réaliser un Data Cleaning permettant de rendre le texte plus facile à traiter par le modèle (retirer les chiffres, les mots à une seule lettre, ajouter 'start' et 'end' pour uniformiser le format des descriptions).
+Le dataset est ensuite découpé en train et validation datasets et convertis en DataLoader. 
+
+Le ResNet est utilisé, dans notre cas, pour récupérer les vecteurs de features, c'est-à-dire la représentation de l'image en un vecteur de longueur 512 la caractérisant. Cette méthode est très utilisée car elle permet d'empêcher le "vanishing gradient" (récurrent dans les modèles traitant des images à cause du grand nombre de couches) et qu'il s'agit d'un modèle pré-entraîné sur un grand nombre d'images.
+
+Une fois les données mises au bon format pour le modèle Transformer, nous utilisons des fonctions sinusoidales et cosinusoidales pour coder les positions dans une séquence de caractères.
+
+La partie permettant de traduire la sortie du ResNet en texte décrivant l'image est un décodeur à 4 couches auquel est ajouté une couche d'embedding et une couche linéaire permettant de transformer la sortie du décodeur en un vecteur de scores pour chaque mot de vocabulaire et de convertir les indices de mots en embedding.
+
+Enfin, le modèle est entraîné sur une plage d'epochs variant entre 30 et 50 et évalué grâce à la métrique du score bleu.
 
 ### Analyse des résultats
 
