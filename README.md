@@ -8,6 +8,8 @@ La génération automatique de descriptions d'images est une tâche complexe qui
 
 Pour ce projet, nous nous sommes basés sur le concours kaggle suivant : [Kaggle Project](https://www.kaggle.com/datasets/adityajn105/flickr8k). En s’inspirant des différents modèles soumis pour ce concours, nous avons pour premier objectif d’étudier l'impact des hyperparamètres sur les performances du modèle ainsi que de voir si les scaling laws s'appliquent bien à notre modèle.
 
+**Voir `Rapport.md` pour plus d'explications.**
+
 ## Env
 
 - Install GPU => [Install CUDA WSL2](https://www.youtube.com/watch?v=R4m8YEixidI)
