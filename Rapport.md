@@ -82,11 +82,12 @@ Pour vérifier cette hypothèse selon laquelle la capacité de notre modèle est
 
 ![batchsize 64](batch64.png)
 
-On remarque que lorsque le nombre de batch est plus faible, la training loss converge vers une valeur plus basse tandis que la validation loss remonte après une vingtaine d'epochs. Cela prouve bien qu'augmenter le nombre de paramètres permet d'avoir un meilleure modèle et provoque le phénomène d'overfitting (survenant lorsqu'un modèle apprend "par coeur") et on pourrait s'attendre à voir une double descente si on prolonge le nombre d'epochs. 30 epochs semble même être un bon seuil pour le modèle puisqu'on se 
+On remarque que lorsque le nombre de batch est plus faible, la training loss converge plus vite tandis que la validation loss remonte après une vingtaine d'epochs. Cela prouve bien qu'augmenter le nombre de paramètres permet d'avoir un meilleure modèle et provoque le phénomène d'overfitting (survenant lorsqu'un modèle apprend "par coeur") et on pourrait s'attendre à voir une double descente si on prolonge le nombre d'epochs. 30 epochs semble même être un bon seuil pour le modèle puisqu'on est autour de "l'overfitting threshold".
 
-Nous avons ensuite cherché à savoir si cette convergence de la loss était parallèle à celle du score bleu et donc de l'accuracy de notre modèle. En traçant la coube d'accuracy sur 30 epochs, nous avons obtenu ceci :
+Nous avons ensuite cherché à savoir si cette convergence de la loss était parallèle à celle du score bleu et donc de l'accuracy de notre modèle. Nous voulions tracer la courbe en générant des captions pour le dataset de validation à chaque epoch mais nous ne sommes pas parvenus à calculer correctement le score bleu, d'autant plus que le temps total que cela prendrait était trop long.
 
 ## Conclusion
+
 
 
 ## Bibliographie
@@ -95,4 +96,6 @@ Nous avons ensuite cherché à savoir si cette convergence de la loss était par
 
 [2] Ondeng, O.; Ouma, H.; Akuon, P. A Review of Transformer-Based Approaches for Image Captioning. Appl. Sci. 2023, 13, 11103. https://doi.org/10.3390/app131911103
 
-[3] 
+[3] Interactive Attention for Neural Machine Translation, https://www.researchgate.net/publication/309207378_Interactive_Attention_for_Neural_Machine_Translation
+
+

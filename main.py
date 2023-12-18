@@ -365,41 +365,6 @@ for epoch in tqdm(range(EPOCH)):
         optimizer.step()
         total_epoch_train_loss += torch.sum(loss_masked).detach().item()
         total_train_words += torch.sum(padding_mask)
-
-        for img_emb,ref_cap in zip(image_embed, real_capt):
-            predicted_sentence = []
-
-            input_seq = [pad_token]*max_seq_len
-            input_seq[0] = start_token
-
-            input_seq = torch.tensor(input_seq).unsqueeze(0).to(device)
-            
-            with torch.no_grad():
-                for eval_iter in range(0, max_seq_len):
-
-                    output, padding_mask = ictModel.forward(image_embed, input_seq)
-
-                    output = output[eval_iter, 0, :]
-
-                    values = torch.topk(output, 1).values.tolist()
-                    indices = torch.topk(output, 1).indices.tolist()
-
-                    next_word_index = random.choices(indices, values, k = 1)[0]
-
-                    next_word = index_to_word[next_word_index]
-
-                    input_seq[:, eval_iter+1] = next_word_index
-
-
-                    if next_word == '<end>' :
-                        break
-
-                predicted_sentence.append(next_word)
-            
-            total_accuracy_train += sentence_bleu(ref_cap,predicted_sentence)
-
-        total_accuracy_train = total_accuracy_train/len(real_capt)
-
  
     total_epoch_train_loss = total_epoch_train_loss/total_train_words
 
