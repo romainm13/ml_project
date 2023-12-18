@@ -84,11 +84,13 @@ Pour vérifier cette hypothèse selon laquelle la capacité de notre modèle est
 
 On remarque que lorsque le nombre de batch est plus faible, la training loss converge plus vite tandis que la validation loss remonte après une vingtaine d'epochs. Cela prouve bien qu'augmenter le nombre de paramètres permet d'avoir un meilleure modèle et provoque le phénomène d'overfitting (survenant lorsqu'un modèle apprend "par coeur") et on pourrait s'attendre à voir une double descente si on prolonge le nombre d'epochs. 30 epochs semble même être un bon seuil pour le modèle puisqu'on est autour de "l'overfitting threshold".
 
-Nous avons ensuite cherché à savoir si cette convergence de la loss était parallèle à celle du score bleu et donc de l'accuracy de notre modèle. Nous voulions tracer la courbe en générant des captions pour le dataset de validation à chaque epoch mais nous ne sommes pas parvenus à calculer correctement le score bleu, d'autant plus que le temps total que cela prendrait était trop long.
+Nous avons ensuite cherché à savoir si cette convergence de la loss était parallèle à celle du score bleu et donc de l'accuracy de notre modèle. Nous voulions tracer la courbe en générant des captions pour le dataset de validation à chaque epoch mais nous ne sommes pas parvenus à calculer correctement le score bleu, d'autant plus que le temps total que cela prendrait était trop long. Cependant, nous pouvons dire, au vu des descriptions prédites, que le modèle parvient à être assez pertinent comme le montre les exemples suivants :
+
+![Exemple chien](exemple.png)
 
 ## Conclusion
 
-
+En conclusion, le modèle que nous avons utilisé génère bien des descriptions d'image cohérentes malgré une capacité de modèle probablement un peu faible. Des solutions telles qu'augmenter le nombre de couches dans le modèle ou la data augmentation (tourner les images, leur retirer une partie, etc pour créer du bruit) peuvent palier à ce problème mais requierent plus de capacités computationnelles que nous ne possédons pas.
 
 ## Bibliographie
 
