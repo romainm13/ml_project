@@ -224,10 +224,10 @@ class FlickerDataSetResnet():
         return torch.tensor(caption_seq), torch.tensor(target_seq), image_tensor_view
 
 train_dataset_resnet = FlickerDataSetResnet(train, 'EncodedImageTrainResNet.pkl')
-train_dataloader_resnet = DataLoader(train_dataset_resnet, batch_size = 32, shuffle=True)
+train_dataloader_resnet = DataLoader(train_dataset_resnet, batch_size = 64, shuffle=True)
 
 valid_dataset_resnet = FlickerDataSetResnet(valid, 'EncodedImageValidResNet.pkl')
-valid_dataloader_resnet = DataLoader(valid_dataset_resnet, batch_size = 32, shuffle=True)
+valid_dataloader_resnet = DataLoader(valid_dataset_resnet, batch_size = 64, shuffle=True)
 
 # %% 
 # ## Create Transformer Decoder Model. This Model will take caption sequence and the extracted resnet image features as input and ouput 1 timestep shifted (left) caption sequence. 
