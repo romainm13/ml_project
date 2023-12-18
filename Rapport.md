@@ -72,6 +72,9 @@ Pour mieux observer la convergence de la training loss, nous avons réalisé un 
 ![50 epochs batch 32](50epochs.png)
 
 Pour vérifier cette hypothèse selon laquelle la capacité de notre modèle est trop petite, nous avons réalisé deux autres entraînements avec des tailles de batch différentes dont voici les courbes ci-dessous : 
+- 40 epochs avec batchsize = 8
+
+![batchsize 8]()
 - 30 epochs avec batchsize = 16
 
 ![batchsize 16](batch16.png)
@@ -82,7 +85,7 @@ Pour vérifier cette hypothèse selon laquelle la capacité de notre modèle est
 
 ![batchsize 64](batch64.png)
 
-On remarque que lorsque le nombre de batch est plus faible, la training loss converge plus vite tandis que la validation loss remonte après une vingtaine d'epochs. Cela prouve bien qu'augmenter le nombre de paramètres permet d'avoir un meilleure modèle et provoque le phénomène d'overfitting (survenant lorsqu'un modèle apprend "par coeur") et on pourrait s'attendre à voir une double descente si on prolonge le nombre d'epochs. 30 epochs semble même être un bon seuil pour le modèle puisqu'on est autour de "l'overfitting threshold".
+On remarque que lorsque le nombre de batch est plus faible, la training loss converge plus vite tandis que la validation loss remonte après une vingtaine d'epochs. Cela prouve bien qu'augmenter le nombre de paramètres permet d'avoir un meilleure modèle et provoque le phénomène d'overfitting (survenant lorsqu'un modèle apprend "par coeur") et on pourrait s'attendre à voir une double descente si on prolonge le nombre d'epochs. 30 epochs semble même être un bon seuil pour le modèle puisqu'on est autour de "l'overfitting threshold". 
 
 Nous avons ensuite cherché à savoir si cette convergence de la loss était parallèle à celle du score bleu et donc de l'accuracy de notre modèle. Nous voulions tracer la courbe en générant des captions pour le dataset de validation à chaque epoch mais nous ne sommes pas parvenus à calculer correctement le score bleu, d'autant plus que le temps total que cela prendrait était trop long. Cependant, nous pouvons dire, au vu des descriptions prédites, que le modèle parvient à être assez pertinent comme le montre les exemples suivants :
 
