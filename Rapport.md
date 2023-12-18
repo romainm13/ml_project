@@ -2,7 +2,7 @@
 
 ## Introduction
 
-La génération automatique de descriptions d'images est une tâche complexe qui implique la compréhension de contenu visuel et la production de texte descriptif. Ce projet vise à explorer l'utilisation d'un réseau ResNet (encodeur) et d'un modèle Transformers (décodeur) pour accomplir cette tâche. 
+La génération automatique de descriptions d'images est une tâche complexe qui implique la compréhension de contenu visuel et la production de texte descriptif. Ce projet vise à explorer l'utilisation d'un réseau ResNet (encodeur) et d'un modèle Transformers (décodeur) pour accomplir cette tâche.
 
 Pour ce projet, nous nous sommes basés sur le concours kaggle suivant : [Kaggle Project](https://www.kaggle.com/datasets/adityajn105/flickr8k). En s’inspirant des différents modèles soumis pour ce concours, nous avons pour premier objectif d’étudier l'impact des hyperparamètres sur les performances du modèle ainsi que de voir si les scaling laws s'appliquent bien à notre modèle.
 
@@ -42,10 +42,14 @@ Le Dataset Flickr8k a été manuellement sélectionné pour que n’apparaissent
 
 ## Implémentation  et analyse des résultats
 
+**L'ensemble du code est implémenté dans le fichier `main.py.`**
+
+**L'ensemble du code exécuté pour ce projet est disponible dans `main.html.`**
+
 ### Implémentation
 
 La première étape du code consiste à réaliser un Data Cleaning permettant de rendre le texte plus facile à traiter par le modèle (retirer les chiffres, les mots à une seule lettre, ajouter 'start' et 'end' pour uniformiser le format des descriptions).
-Le dataset est ensuite découpé en train et validation datasets et convertis en DataLoader. 
+Le dataset est ensuite découpé en train et validation datasets et convertis en DataLoader.
 
 Le ResNet est utilisé, dans notre cas, en tant qu'**encodeur**, pour récupérer la représentation de l'image en un vecteur de longueur 512 la caractérisant. Cette méthode est très utilisée car elle permet d'empêcher le "vanishing gradient" et qu'il s'agit d'un modèle pré-entraîné sur un grand nombre d'images.
 
@@ -59,37 +63,45 @@ Enfin, le modèle est entraîné sur une plage d'epochs variant entre 30 et 50 e
 
 Nous avons réalisé l'entraînement de notre modèle sur un ordinateur équipé d'un GPU et une epoch prend environ 5 minutes à être effectuée.
 
-Notre première analyse concerne la loss et ses variations selon le nombre d'epochs. Ce premier essai nous a amenés aux observations et suppositions suivantes : 
+Notre première analyse concerne la loss et ses variations selon le nombre d'epochs. Ce premier essai nous a amenés aux observations et suppositions suivantes :
 
 - la train et validation loss se croisent entre la 4e et 5e epoch ;
 - la validation loss converge vite vers 3.5 alors que la training loss continue de diminuer (même si elle garde des valeurs élevées) ;
 - les valeurs de loss étant élevées, il semble que les capacités du modèle ne sont pas assez grandes.
 
-![30 epochs batch 32](30epochs.png)
+![30 epochs batch 32](src_rapport/30epochs_b32.png)
 
 Pour mieux observer la convergence de la training loss, nous avons réalisé un entraînement avec 50 epochs qui a montré que celle-ci convergeait vers une valeur supérieure à 2, ce qui est trop élevé pour considérer que le modèle apprend "bien".
 
-![50 epochs batch 32](50epochs.png)
+![50 epochs batch 32](src_rapport/50epochs_b32.png)
 
-Pour vérifier cette hypothèse selon laquelle la capacité de notre modèle est trop petite, nous avons réalisé deux autres entraînements avec des tailles de batch différentes dont voici les courbes ci-dessous : 
+Pour vérifier cette hypothèse selon laquelle la capacité de notre modèle est trop petite, nous avons réalisé deux autres entraînements avec des tailles de batch différentes dont voici les courbes ci-dessous :
+
 - 40 epochs avec batchsize = 8
 
-![batchsize 8]()
+![batchsize 8](src_rapport/40epochs_b8.png)
+
 - 30 epochs avec batchsize = 16
 
-![batchsize 16](batch16.png)
+![batchsize 16](src_rapport/batch16.png)
+
 - 30 epochs avec batchsize = 32
 
-![batchsize 32](batch32.png)
+![batchsize 32](src_rapport/batch32.png)
+
 - 30 epochs avec bacthsize = 64
 
-![batchsize 64](batch64.png)
+![batchsize 64](src_rapport/batch64.png)
 
-On remarque que lorsque le nombre de batch est plus faible, la training loss converge plus vite tandis que la validation loss remonte après une vingtaine d'epochs. Cela prouve bien qu'augmenter le nombre de paramètres permet d'avoir un meilleure modèle et provoque le phénomène d'overfitting (survenant lorsqu'un modèle apprend "par coeur") et on pourrait s'attendre à voir une double descente si on prolonge le nombre d'epochs. 30 epochs semble même être un bon seuil pour le modèle puisqu'on est autour de "l'overfitting threshold". 
+On remarque que lorsque le nombre de batch est plus faible, la training loss converge plus vite tandis que la validation loss remonte après une vingtaine d'epochs. Cela prouve bien qu'augmenter le nombre de paramètres permet d'avoir un meilleure modèle et provoque le phénomène d'overfitting (survenant lorsqu'un modèle apprend "par coeur") et on pourrait s'attendre à voir une double descente si on prolonge le nombre d'epochs. 30 epochs semble même être un bon seuil pour le modèle puisqu'on est autour de "l'overfitting threshold".
 
 Nous avons ensuite cherché à savoir si cette convergence de la loss était parallèle à celle du score bleu et donc de l'accuracy de notre modèle. Nous voulions tracer la courbe en générant des captions pour le dataset de validation à chaque epoch mais nous ne sommes pas parvenus à calculer correctement le score bleu, d'autant plus que le temps total que cela prendrait était trop long. Cependant, nous pouvons dire, au vu des descriptions prédites, que le modèle parvient à être assez pertinent comme le montre les exemples suivants :
 
-![Exemple chien](exemple.png)
+![Exemple chien](src_rapport/exemple.png)
+
+Ou encore pour une autre:
+
+![Exemple personne](src_rapport/exemple2.png)
 
 ## Conclusion
 
@@ -97,10 +109,8 @@ En conclusion, le modèle que nous avons utilisé génère bien des descriptions
 
 ## Bibliographie
 
-[1] A Comprehensive Analysis of Real-World Image Captioning and Scene Identification, https://arxiv.org/pdf/2308.02833.pdf
+[1] [A Comprehensive Analysis of Real-World Image Captioning and Scene Identification](https://arxiv.org/pdf/2308.02833.pdf)
 
-[2] Ondeng, O.; Ouma, H.; Akuon, P. A Review of Transformer-Based Approaches for Image Captioning. Appl. Sci. 2023, 13, 11103. https://doi.org/10.3390/app131911103
+[2] [Ondeng, O.; Ouma, H.; Akuon, P. A Review of Transformer-Based Approaches for Image Captioning. Appl. Sci. 2023, 13, 11103.](https://doi.org/10.3390/app131911103)
 
-[3] Interactive Attention for Neural Machine Translation, https://www.researchgate.net/publication/309207378_Interactive_Attention_for_Neural_Machine_Translation
-
-
+[3] [Interactive Attention for Neural Machine Translation](https://www.researchgate.net/publication/309207378_Interactive_Attention_for_Neural_Machine_Translation)
