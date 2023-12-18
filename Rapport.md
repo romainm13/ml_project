@@ -49,7 +49,7 @@ Le dataset est ensuite découpé en train et validation datasets et convertis en
 
 Le ResNet est utilisé, dans notre cas, en tant qu'**encodeur**, pour récupérer la représentation de l'image en un vecteur de longueur 512 la caractérisant. Cette méthode est très utilisée car elle permet d'empêcher le "vanishing gradient" et qu'il s'agit d'un modèle pré-entraîné sur un grand nombre d'images.
 
-Une fois les données mises au bon format pour le modèle Transformer, nous utilisons des fonctions sinusoidales et cosinusoidales pour coder les positions dans une séquence de caractères.
+Une fois les données mises au bon format pour le modèle Transformer, nous utilisons des fonctions sinusoidales et cosinusoidales pour coder les positions dans une séquence de caractères (Positional Encoding).
 
 La partie permettant de traduire la sortie du ResNet en texte décrivant l'image est un **décodeur** de type Transformer à 4 couches auquel est ajouté une couche d'embedding et une couche linéaire permettant de transformer la sortie du décodeur en un vecteur de scores pour chaque mot de vocabulaire et de convertir les indices de mots en embedding.
 
@@ -57,9 +57,32 @@ Enfin, le modèle est entraîné sur une plage d'epochs variant entre 30 et 50 e
 
 ### Analyse des résultats
 
-Notre première analyse concerne la loss et ses variations selon le nombre d'epochs. Nous avons tout d'abord remarqué que la training loss stagnait à partir de 30 epochs et que la validation loss dépasse la training loss à partir de la 5e epoch. En souhaitant mieux comprendre cette évolution, nous avons réalisé un test avec 50 epochs et avons vu que la validation loss n'évoluait pas tandis que la train loss convergeait. Notre modèle n'overfit donc pas puisque la validation loss ne diverge pas.
+Nous avons réalisé l'entraînement de notre modèle sur un ordinateur équipé d'un GPU et une epoch prend environ 5 minutes à être effectuée.
 
-Afin d'évaluer l'impact du nombre de paramètres sur l'overfitting, nous avons modifié le nombre de batch et avons observé que la convergence ne se faisait pas de la même façon : lorsque le nombre de batch est plus faible, la training loss converge vers une valeur plus basse tandis que la validation loss remonte après une vingtaine d'epochs. Cela prouve bien qu'augmenter le nombre de paramètres provoque le phénomène d'overfitting et on pourrait s'attendre à voir une double descente si on prolonge le nombre d'epochs.
+Notre première analyse concerne la loss et ses variations selon le nombre d'epochs. Ce premier essai nous a amenés aux observations et suppositions suivantes : 
+
+- la train et validation loss se croisent entre la 4e et 5e epoch ;
+- la validation loss converge vite vers 3.5 alors que la training loss continue de diminuer (même si elle garde des valeurs élevées) ;
+- les valeurs de loss étant élevées, il semble que les capacités du modèle ne sont pas assez grandes.
+
+![30 epochs batch 32](30epochs.png)
+
+Pour mieux observer la convergence de la training loss, nous avons réalisé un entraînement avec 50 epochs qui a montré que celle-ci convergeait vers une valeur supérieure à 2, ce qui est trop élevé pour considérer que le modèle apprend "bien".
+
+![50 epochs batch 32](50epochs.png)
+
+Pour vérifier cette hypothèse selon laquelle la capacité de notre modèle est trop petite, nous avons réalisé deux autres entraînements avec des tailles de batch différentes dont voici les courbes ci-dessous : 
+- 30 epochs avec batchsize = 16
+
+![batchsize 16](batch16.png)
+- 30 epochs avec batchsize = 32
+
+![batchsize 32](batch32.png)
+- 30 epochs avec bacthsize = 64
+
+![batchsize 64](batch64.png)
+
+On remarque que lorsque le nombre de batch est plus faible, la training loss converge vers une valeur plus basse tandis que la validation loss remonte après une vingtaine d'epochs. Cela prouve bien qu'augmenter le nombre de paramètres permet d'avoir un meilleure modèle et provoque le phénomène d'overfitting (survenant lorsqu'un modèle apprend "par coeur") et on pourrait s'attendre à voir une double descente si on prolonge le nombre d'epochs. 30 epochs semble même être un bon seuil pour le modèle puisqu'on se 
 
 Nous avons ensuite cherché à savoir si cette convergence de la loss était parallèle à celle du score bleu et donc de l'accuracy de notre modèle. En traçant la coube d'accuracy sur 30 epochs, nous avons obtenu ceci :
 
